@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="tr" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <meta name="theme-color" content="#0b1020">
+  <title>{{ page_title }} · GitFlow Manager</title>
+  <script>
+    (function () {
+      try {
+        const theme = localStorage.getItem('gfm-theme') || 'dark';
+        const lang = localStorage.getItem('gfm-language') || 'tr';
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.lang = lang;
+      } catch (error) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = { darkMode: 'class', theme: { extend: { colors: { brand: { 400: '#8b9cff', 500: '#6b7cff', 600: '#5365e8' } }, boxShadow: { glow: '0 0 40px rgba(105,124,255,.15)' } } } }; 
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body class="min-h-screen antialiased">
+  <div class="app-shell">
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <a href="{{ url_for('dashboard_page') }}" class="brand-lockup">
+        <span class="brand-mark"><i data-lucide="git-branch"></i></span>
+        <span class="brand-copy"><strong>GitFlow</strong><small>MANAGER</small></span>
+      </a>
+      <div class="workspace-select">
+        <span class="workspace-avatar"><i data-lucide="layers-3"></i></span>
+        <span class="workspace-copy"><b data-i18n="workspace.local">Yerel çalışma alanı</b><small data-i18n="workspace.personal">Kişisel ortam</small></span>
+        <i data-lucide="chevrons-up-down" class="workspace-chevron"></i>
+      </div>
+      <div class="nav-label" data-i18n="nav.overview">GENEL BAKIŞ</div>
+      <nav class="side-nav">
+        <a href="{{ url_for('dashboard_page') }}" class="nav-link {% if page == 'dashboard' %}active{% endif %}"><i data-lucide="layout-dashboard"></i><span data-i18n="nav.dashboard">Kontrol Paneli</span></a>
+        <a href="{{ url_for('projects_page') }}" class="nav-link {% if page == 'projects' %}active{% endif %}"><i data-lucide="folders"></i><span data-i18n="nav.projects">Projeler</span><span class="nav-count" id="sidebarProjectCount">{{ registered_project_count }}</span></a>
+        <a href="{{ url_for('workspace_page') }}" class="nav-link {% if page == 'workspace' %}active{% endif %}"><i data-lucide="git-pull-request"></i><span data-i18n="nav.workspace">Çalışma Alanı</span></a>
+        <a href="{{ url_for('activity_page') }}" class="nav-link {% if page == 'activity' %}active{% endif %}"><i data-lucide="activity"></i><span data-i18n="nav.activity">Aktivite</span></a>
+      </nav>
+      <div class="nav-label nav-label-spaced" data-i18n="nav.collaboration">İŞ BİRLİĞİ</div>
+      <nav class="side-nav">
+        <a href="{{ url_for('collaborators_page') }}" class="nav-link {% if page == 'collaborators' %}active{% endif %}"><i data-lucide="users-round"></i><span data-i18n="nav.collaborators">Proje Ortakları</span></a>
+        <a href="{{ url_for('account_page') }}" class="nav-link {% if page == 'account' %}active{% endif %}"><i data-lucide="github"></i><span data-i18n="nav.account">Git Hesabı</span><span class="connection-dot {% if github_token_present %}connected{% endif %}" id="githubSidebarDot"></span></a>
+      </nav>
+      <div class="nav-label nav-label-spaced" data-i18n="nav.system">SİSTEM</div>
+      <nav class="side-nav">
+        <a href="{{ url_for('settings_page') }}" class="nav-link {% if page == 'settings' %}active{% endif %}"><i data-lucide="settings-2"></i><span data-i18n="nav.settings">Ayarlar</span></a>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-status">
+        <span class="status-pulse"></span>
+        <span><b data-i18n="local.status">Yerel mod aktif</b><small data-i18n="local.security">İşlemler bu bilgisayarda çalışır</small></span>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar">GF</div>
+        <div class="user-copy"><b>GitFlow Manager</b><small data-i18n="user.developer">Geliştirici alanı</small></div>
+        <a href="{{ url_for('settings_page') }}" class="icon-button subtle" aria-label="Settings"><i data-lucide="ellipsis"></i></a>
+      </div>
+    </aside>
+    <div class="main-column">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-button mobile-menu-button" id="mobileMenuButton" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+          <div class="breadcrumb"><span data-i18n="brand.name">GitFlow Manager</span><i data-lucide="chevron-right"></i><strong data-i18n="{% if page == 'dashboard' %}nav.dashboard{% elif page == 'projects' %}nav.projects{% elif page == 'workspace' %}nav.workspace{% elif page == 'activity' %}nav.activity{% elif page == 'collaborators' %}nav.collaborators{% elif page == 'account' %}nav.account{% else %}nav.settings{% endif %}">{{ page_title }}</strong></div>
+        </div>
+        <div class="topbar-actions">
+          <a class="active-project-chip {% if not active_status %}is-empty{% endif %}" href="{{ url_for('workspace_page') }}" title="Active project">
+            <span class="project-chip-dot"></span><span id="headerActiveProject" {% if not active_status %}data-i18n="header.noProject"{% endif %}>{{ active_status.repository_name if active_status else 'Proje seçilmedi' }}</span><i data-lucide="chevron-down"></i>
+          </a>
+          <span class="topbar-divider"></span>
+          <button class="icon-button" id="themeToggle" aria-label="Toggle theme" title="Toggle theme"><i data-lucide="sun-moon"></i></button>
+          <label class="language-select-wrap"><i data-lucide="languages"></i><select id="languageSwitcher" aria-label="Language"><option value="tr">TR</option><option value="en">EN</option></select></label>
+        </div>
+      </header>
+      <main class="main-content">
+        {% block content %}{% endblock %}
+      </main>
+      <footer class="app-footer"><span>GitFlow Manager <span class="footer-separator">·</span> <span data-i18n="footer.openSource">Açık kaynak geliştirici aracı</span></span><span><span class="footer-dot"></span><span data-i18n="footer.localOnly">Yalnızca bu bilgisayarda</span></span></footer>
+    </div>
+  </div>
+  <div id="toastRegion" class="toast-region" role="status" aria-live="polite"></div>
+  <div id="modalRoot"></div>
+  <script>window.GFM = { csrf: {{ csrf_token|tojson }}, page: {{ page|tojson }}, activeStatus: {{ (active_status or {})|tojson }} };</script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
