@@ -482,7 +482,6 @@ GitFlow Manager is distributed under the [MIT License](LICENSE) included in this
 
 <div align="center">
 
-**Built for a calmer Git workflow.**  
-**Daha düzenli bir Git iş akışı için.**
+**dbmatik**  
 
 </div>
